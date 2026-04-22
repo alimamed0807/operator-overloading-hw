@@ -1,187 +1,196 @@
 #include <iostream>
-#include <cstring>
 #include <cassert>
-
 using namespace std;
 
-class Airplane {
-    int _id;
-    char* _model = nullptr;
-    char* _color = nullptr;
-    double _engine;
-    int _capacity;
-
-public:
-    static int staticId;
-    static int MAXCOUNT;
-
-    Airplane() : _id(++staticId), _model(nullptr), _color(nullptr), _engine(0.0), _capacity(0) {}
-
-    explicit Airplane(const char* model, const char* color, double engine, int capacity)
-        : _id(++staticId) {
-        setModel(model);
-        setColor(color);
-        setEngine(engine);
-        setCapacity(capacity);
-    }
-
-    int getId() const { return _id; }
-    const char* getModel() const { return _model; }
-    const char* getColor() const { return _color; }
-    double getEngine() const { return _engine; }
-    int getCapacity() const { return _capacity; }
-
-    void setModel(const char* model) {
-        assert(model != nullptr);
-        if (this->_model) delete[] this->_model;
-        size_t len = strlen(model) + 1;
-        this->_model = new char[len];
-        strcpy_s(this->_model, len, model);
-    }
-
-    void setColor(const char* color) {
-        assert(color != nullptr);
-        if (this->_color) delete[] this->_color;
-        size_t len = strlen(color) + 1;
-        this->_color = new char[len];
-        strcpy_s(this->_color, len, color);
-    }
-
-    void setEngine(double engine) {
-        assert(engine > 0);
-        this->_engine = engine;
-    }
-
-    void setCapacity(int capacity) {
-        assert(capacity > 0);
-        this->_capacity = capacity;
-    }
-
-    static int getMaxCount() { return MAXCOUNT; }
-
-    void print() {
-        cout << "ID: " << _id << " | Model: " << (_model ? _model : "N/A")
-            << " | Color: " << (_color ? _color : "N/A")
-            << " | Engine: " << _engine << " | Capacity: " << _capacity << endl;
-    }
-
-    ~Airplane() {
-        delete[] _model;
-        delete[] _color;
-    }
-};
-
-int Airplane::staticId = 0;
-int Airplane::MAXCOUNT = 100;
-
-class Garage {
+class Vector {
 private:
-    Airplane** airplanes = nullptr;
-    size_t _count = 0;
-    char* _name = nullptr;
-    char* _address = nullptr;
+    int* _array = nullptr;
+    size_t _size = 0;
+    size_t _capacity = 15;
+
+    void resize() {
+        _capacity *= 2;
+        int* temp = new int[_capacity];
+
+        for (size_t i = 0; i < _size; i++)
+            temp[i] = _array[i];
+
+        delete[] _array;
+        _array = temp;
+    }
 
 public:
-    Garage() = default;
-
-    Garage(const char* name, const char* address) {
-        setName(name);
-        setAddress(address);
+    Vector() {
+        _array = new int[_capacity];
     }
 
-    const char* getName() const { return _name; }
-    const char* getAddress() const { return _address; }
-
-    void setName(const char* name) {
-        assert(name != nullptr);
-        if (this->_name) delete[] this->_name;
-        this->_name = new char[strlen(name) + 1];
-        strcpy_s(this->_name, strlen(name) + 1, name);
+    Vector(size_t capacity) {
+        _capacity = capacity;
+        _array = new int[_capacity];
     }
 
-    void setAddress(const char* address) {
-        assert(address != nullptr);
-        if (this->_address) delete[] this->_address;
-        this->_address = new char[strlen(address) + 1];
-        strcpy_s(this->_address, strlen(address) + 1, address);
+    ~Vector() {
+        delete[] _array;
     }
 
-    void addAirplane(Airplane* airplane) {
-        assert(airplane != nullptr);
-        Airplane** newAirplanes = new Airplane * [_count + 1];
-        for (size_t i = 0; i < _count; i++) {
-            newAirplanes[i] = airplanes[i];
-        }
-        newAirplanes[_count] = airplane;
-        delete[] airplanes;
-        airplanes = newAirplanes;
-        _count++;
+    size_t size() const { return _size; }
+    size_t capacity() const { return _capacity; }
+
+    void print() const {
+        for (size_t i = 0; i < _size; i++)
+            cout << _array[i] << " ";
+        cout << endl;
     }
 
-    Airplane* getAirplaneById(int id) {
-        for (size_t i = 0; i < _count; i++) {
-            if (airplanes[i]->getId() == id) return airplanes[i];
-        }
-        return nullptr;
+    int& operator[](size_t index) {
+        assert(index < _size && "Index out of range!");
+        return _array[index];
     }
 
-    Airplane** getAirplanesCapacityGreaterThan(int minCapacity) {
-        int tempCount = 0;
-        for (size_t i = 0; i < _count; i++) {
-            if (airplanes[i]->getCapacity() > minCapacity) tempCount++;
-        }
-        if (tempCount == 0) return nullptr;
-        Airplane** result = new Airplane * [tempCount + 1];
-        int j = 0;
-        for (size_t i = 0; i < _count; i++) {
-            if (airplanes[i]->getCapacity() > minCapacity) {
-                result[j++] = airplanes[i];
+    int& operator()(size_t index) {
+        return (*this)[index];
+    }
+
+    Vector& push_back(int value) {
+        if (_size >= _capacity)
+            resize();
+
+        _array[_size++] = value;
+        return *this;
+    }
+
+    Vector& push_front(int value) {
+        if (_size >= _capacity)
+            resize();
+
+        for (size_t i = _size; i > 0; i--)
+            _array[i] = _array[i - 1];
+
+        _array[0] = value;
+        _size++;
+        return *this;
+    }
+
+    Vector& pop_back() {
+        if (_size > 0)
+            _size--;
+        return *this;
+    }
+
+    Vector& pop_front() {
+        if (_size == 0) return *this;
+
+        for (size_t i = 0; i < _size - 1; i++)
+            _array[i] = _array[i + 1];
+
+        _size--;
+        return *this;
+    }
+
+    void delete_by_index(size_t index) {
+        assert(index < _size);
+
+        for (size_t i = index; i < _size - 1; i++)
+            _array[i] = _array[i + 1];
+
+        _size--;
+    }
+
+    void insert_by_index(size_t index, int element) {
+        assert(index <= _size);
+
+        if (_size >= _capacity)
+            resize();
+
+        for (size_t i = _size; i > index; i--)
+            _array[i] = _array[i - 1];
+
+        _array[index] = element;
+        _size++;
+    }
+
+    size_t find(int element) {
+        for (size_t i = 0; i < _size; i++)
+            if (_array[i] == element)
+                return i;
+
+        return -1;
+    }
+
+    size_t rfind(int element) {
+        for (int i = _size - 1; i >= 0; i--)
+            if (_array[i] == element)
+                return i;
+
+        return -1;
+    }
+
+    void sort(bool reverse = false) {
+        for (size_t i = 0; i < _size - 1; i++) {
+            for (size_t j = i + 1; j < _size; j++) {
+                if ((!reverse && _array[i] > _array[j]) ||
+                    (reverse && _array[i] < _array[j])) {
+                    swap(_array[i], _array[j]);
+                }
             }
         }
-        result[j] = nullptr;
+    }
+
+    //  operator+
+
+    Vector operator+(const Vector& other) {
+        Vector result(_size + other._size);
+
+        for (size_t i = 0; i < _size; i++)
+            result.push_back(_array[i]);
+
+        for (size_t i = 0; i < other._size; i++)
+            result.push_back(other._array[i]);
+
         return result;
     }
 
-    Airplane** getAirplanesByColor(const char* color) {
-        assert(color != nullptr);
-        int tempCount = 0;
-        for (size_t i = 0; i < _count; i++) {
-            if (strcmp(airplanes[i]->getColor(), color) == 0) tempCount++;
-        }
-        if (tempCount == 0) return nullptr;
-        Airplane** result = new Airplane * [tempCount + 1];
-        int j = 0;
-        for (size_t i = 0; i < _count; i++) {
-            if (strcmp(airplanes[i]->getColor(), color) == 0) {
-                result[j++] = airplanes[i];
-            }
-        }
-        result[j] = nullptr;
-        return result;
+    //  operator==
+
+    bool operator==(const Vector& other) {
+        if (_size != other._size) return false;
+
+        for (size_t i = 0; i < _size; i++)
+            if (_array[i] != other._array[i])
+                return false;
+
+        return true;
     }
 
-    void print() {
-        cout << "\nGarage: " << (_name ? _name : "N/A") << endl;
-        cout << "Address: " << (_address ? _address : "N/A") << endl;
-        for (size_t i = 0; i < _count; i++) {
-            airplanes[i]->print();
-        }
+    bool operator!=(const Vector& other) {
+        return !(*this == other);
     }
 
-    ~Garage() {
-        delete[] _name;
-        delete[] _address;
-        for (size_t i = 0; i < _count; i++) {
-            delete airplanes[i];
-        }
-        delete[] airplanes;
+    //  ++
+
+    Vector& operator++() {
+        for (size_t i = 0; i < _size; i++)
+            _array[i]++;
+        return *this;
+    }
+
+    Vector operator++(int) {
+        Vector temp = *this;
+        ++(*this);
+        return temp;
+    }
+
+    //  --
+
+    Vector& operator--() {
+        for (size_t i = 0; i < _size; i++)
+            _array[i]--;
+        return *this;
+    }
+
+    Vector operator--(int) {
+        Vector temp = *this;
+        --(*this);
+        return temp;
     }
 };
-
-int main() {
-    Garage g("Sky Hangar", "Baku");
-    g.addAirplane(new Airplane("Boeing 747", "White", 4.2, 400));
-    g.addAirplane(new Airplane("Airbus A320", "Blue", 3.0, 150));
-    g.print();
-    return 0;
-}
